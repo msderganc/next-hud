@@ -4,10 +4,10 @@ A Claude Code mod that adds a band above the prompt with:
 
 - **Next steps**: after each reply, up to three suggested next prompts (made by a small Haiku call). Press or type `1`–`3` to send one, `0` to dismiss.
 - **A usage line** that fits the window, splitting onto two lines when narrow:
-  `$0.01 · ctx █░░░░░░░ 82.1k/1M · cache 58m · 7d ███████░ ↻21.5h · 5h ░░░░░░░░ ↻4.5h`
-  - session cost and context fill
-  - a prompt-cache countdown from your last turn (`cache live` while working, `cache cold` once expired)
-  - the 7-day and 5-hour limits, each bar colored by pace against its reset: dark green (plenty left), green (on track), yellow (close), orange (over), red (way over)
+  `$0.01 · c █░░░░░░░ · 58m · 7d ███████░ 21.5h · 5h ░░░░░░░░ 4.5h`
+  - session cost and a context-fill bar (`c`)
+  - a prompt-cache countdown from your last turn (`live` while working, `cold` once expired)
+  - the 7-day and 5-hour limits, each with the time until it resets and a bar colored by pace against that reset: dark green (plenty left), green (on track), yellow (close), orange (over), red (way over)
 
 The band draws in the terminal and the desktop app's Code tab.
 

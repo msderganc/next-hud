@@ -20,13 +20,6 @@ Answer with one step per line, no numbering, no other text.`
 const BAR = 8
 const SEP = ' · '
 
-const k = (n: number) =>
-  n >= 1_000_000
-    ? `${+(n / 1_000_000).toFixed(1)}M`
-    : n >= 100_000
-      ? `${Math.round(n / 1000)}k`
-      : `${(n / 1000).toFixed(1)}k`
-
 // Short countdown in decimals: "3.2d", "21.5h", "12m", "45s".
 const span = (ms: number) => {
   const secs = Math.max(0, Math.round(ms / 1000))
@@ -205,19 +198,19 @@ export const register: Register = (on, options) => {
             bar(
               label,
               r.percentUsed,
-              r.resetsAt ? ` ↻${span(Date.parse(r.resetsAt) - at)}` : '',
+              r.resetsAt ? ` ${span(Date.parse(r.resetsAt) - at)}` : '',
               paceTone(r, at),
             ),
           ]
         : []
 
     const cache = (): Segment[] => {
-      if (e.props.isWorking) return [plain('cache live', 'success')]
+      if (e.props.isWorking) return [plain('live', 'success')]
       if (cached === null) return []
       const left = cached + ttlMs - at
-      if (left <= 0) return [plain('cache cold', 'error')]
+      if (left <= 0) return [plain('cold', 'error')]
 
-      return [plain(`cache ${span(left)}`, left < ttlMs / 5 ? 'warning' : 'success')]
+      return [plain(span(left), left < ttlMs / 5 ? 'warning' : 'success')]
     }
 
     const ctx = u?.context
@@ -228,7 +221,7 @@ export const register: Register = (on, options) => {
             [
               plain(`$${(u.cost?.usd ?? 0).toFixed(2)}`, 'success'),
               ...(ctx
-                ? [bar('ctx', ctx.percent ?? 0, ` ${k(ctx.tokens ?? 0)}/${k(ctx.window)}`)]
+                ? [bar('c', ctx.percent ?? 0, '')]
                 : []),
               ...cache(),
             ],

@@ -57,10 +57,10 @@ test('the band shows usage and numbered next steps', async ($, on) => {
   })
 
   const ui = await $.ui.mount(BAND)
-  const line = (await ui.find({ type: 'Text', text: /ctx/ }))?.text ?? ''
-  expect(line).toContain('ctx █░░░░░░░ 82.1k/1M')
-  expect(line).toMatch(/7d █{7}░ ↻\d+\.\dd/)
-  expect(line).toContain('cache 1.0h')
+  const line = (await ui.find({ type: 'Text', text: /c █/ }))?.text ?? ''
+  expect(line).toContain('c █░░░░░░░ · 1.0h · 7d')
+  expect(line).toMatch(/7d █{7}░ \d+\.\dd/)
+  expect(line).not.toMatch(/cache|82\.1k/)
   expect(line).not.toMatch(/last|%/)
 
   let step = await ui.find({ type: 'Button', key: 'step-0' })
@@ -74,7 +74,7 @@ test('the band shows usage and numbered next steps', async ($, on) => {
 
   // A narrow band splits the usage line rather than wrapping it.
   const narrow = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 50 } })
-  const row7 = await narrow.find({ type: 'Text', text: /^7d .* · 5h / })
+  const row7 = await narrow.find({ type: 'Text', text: /7d .* · 5h / })
   expect(row7).toBeDefined()
   expect(row7?.text?.length ?? 99).toBeLessThanOrEqual(50)
   await narrow.unmount()
