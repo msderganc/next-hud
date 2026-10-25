@@ -1,0 +1,15 @@
+{
+  "name": "next-hud",
+  "version": "0.3.0",
+  "description": "A band above the prompt with numbered next steps and a usage line (cost, context, cache, 7d and 5h limits).",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "cacheTtl": {
+      "type": "string",
+      "title": "Prompt cache lifetime",
+      "description": "How long the prompt cache lives after the last request: 1h on a subscription, 5m on most API keys.",
+      "default": "1h",
+      "options": ["1h", "5m"]
+    }
+  }
+}

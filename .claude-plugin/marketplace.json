@@ -1,0 +1,5 @@
+{
+  "name": "next-hud",
+  "owner": { "name": "msderganc" },
+  "plugins": [{ "name": "next-hud", "source": "./" }]
+}
