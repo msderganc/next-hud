@@ -11,6 +11,10 @@ const now = atom({ plugin: 'next-hud', key: 'now' } as const, 0)
 const SYSTEM = `You suggest what the user should do next in a coding session.
 Read the assistant's last reply and give up to 3 short next steps the user
 would likely ask for, each an imperative phrase of at most 8 words.
+Each step is a prompt the user sends to the assistant, so suggest only work
+the assistant can do itself. Leave out steps the reply says the user must do
+(signing in, clicking in a browser or another app, approving, deciding), and
+anything the reply says the assistant will not or cannot do.
 Answer with one step per line, no numbering, no other text.`
 
 const BAR = 8
