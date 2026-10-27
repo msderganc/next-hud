@@ -18,6 +18,29 @@ anything the reply says the assistant will not or cannot do.
 Answer with one step per line, no numbering, no other text.`
 
 const BAR = 8
+
+// Claude Code does not report extra usage to plugins, so the month is tracked
+// here: the amount already spent when tracking began (`monthSpentSoFar`, used
+// for that first month only) plus each session's cost, kept in the plugin's
+// store and counted per calendar month.
+let sessionId = String(Date.now())
+
+// Records this session's cost so far and returns the month's total.
+const trackMonth = async ($: any, usd: number, seed: number): Promise<number> => {
+  const month = new Date().toISOString().slice(0, 7)
+  const prefix = `session:${month}:`
+  await $.store.set(`${prefix}${sessionId}`, usd)
+  const keys: string[] = (await $.store.keys()).filter((key: string) => key.startsWith(prefix))
+  const costs = await Promise.all(keys.map(async key => Number((await $.store.get(key)) ?? 0)))
+
+  let seedMonth = await $.store.get('seedMonth')
+  if (seedMonth === undefined || seedMonth === null) {
+    seedMonth = month
+    await $.store.set('seedMonth', month)
+  }
+
+  return (month === seedMonth ? seed : 0) + costs.reduce((a, b) => a + b, 0)
+}
 const SEP = ' · '
 
 const k = (n: number) =>
@@ -69,6 +92,19 @@ export const paceTone = (r: RateLimit, at: number) => {
   return PACE.find(p => pace < p.below)?.color ?? PACE[4].color
 }
 
+// Pace for the calendar month: the share of the budget spent over the share
+// of the month gone, colored with the same scale as the limits.
+const monthTone = (pct: number, at: number) => {
+  const now = new Date(at)
+  const start = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime()
+  const gone = Math.min(1, Math.max(0.02, (at - start) / (end - start)))
+  if (pct >= 100) return PACE[4].color
+  const pace = pct / 100 / gone
+
+  return PACE.find(p => pace < p.below)?.color ?? PACE[4].color
+}
+
 // One piece of the usage line: its drawing and its width in cells.
 type Segment = { width: number; node: JSX.Element }
 
@@ -98,10 +134,14 @@ const pack = (groups: Segment[][], columns: number) => {
 
 export const register: Register = (on, options) => {
   const ttlMs = options.cacheTtl === '5m' ? 5 * 60_000 : 60 * 60_000
+  const monthlyLimit = Number(options.monthlyLimit) || 0
+  const seed = Number(options.monthSpentSoFar) || 0
 
   on('session.start', async ($, e, next) => {
-    const { context, rateLimits, cost } = await $.session.usage()
-    await update($, usage, () => ({ context, rateLimits, cost }))
+    const { context, rateLimits, cost, startedAt } = await $.session.usage()
+    sessionId = String(startedAt ?? Date.now())
+    const monthSpent = await trackMonth($, cost?.usd ?? 0, seed)
+    await update($, usage, () => ({ context, rateLimits, cost, monthSpent }))
     await update($, now, () => Date.now())
     $.clock.every(15_000, () => void update($, now, () => Date.now()))
 
@@ -117,6 +157,7 @@ export const register: Register = (on, options) => {
       },
       rateLimits: e.rateLimits,
       cost: e.cost,
+      monthSpent: await trackMonth($, e.cost?.usd ?? 0, seed),
     }
     await update($, usage, () => measured)
     await update($, now, () => Date.now())
@@ -220,6 +261,18 @@ export const register: Register = (on, options) => {
       return [plain(`cache ${span(left)}`, left < ttlMs / 5 ? 'warning' : 'success')]
     }
 
+    // Extra usage stands in when the plan reports no weekly or monthly limit.
+    const hasPeriodLimit = (u?.rateLimits ?? []).some(
+      r => r.kind === 'seven_day' || isMonthly(r),
+    )
+    const extra = (spent: number | undefined): Segment[] => {
+      if (hasPeriodLimit || !spent || spent <= 0) return []
+      if (monthlyLimit <= 0) return [plain(`extra $${Math.round(spent)}`, 'success')]
+      const pct = (spent / monthlyLimit) * 100
+
+      return [bar('extra', pct, ` $${Math.round(spent)}/$${monthlyLimit}`, monthTone(pct, at))]
+    }
+
     const ctx = u?.context
     const rates = u?.rateLimits ?? []
     const rows = u
@@ -235,6 +288,8 @@ export const register: Register = (on, options) => {
             [
               ...limit('7d', rates.find(r => r.kind === 'seven_day')),
               ...limit('5h', rates.find(r => r.kind === 'five_hour')),
+              ...limit('mo', rates.find(isMonthly)),
+              ...extra(u.monthSpent),
             ],
           ],
           e.props.bodyColumns,

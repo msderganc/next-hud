@@ -4,6 +4,7 @@ export type Usage = {
   context: { tokens?: number; window: number; percent?: number }
   rateLimits: RateLimit[]
   cost?: { usd: number }
+  monthSpent?: number
 }
 
 declare module 'claude-code' {
