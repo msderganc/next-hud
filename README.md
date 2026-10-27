@@ -3,8 +3,11 @@
 A Claude Code mod that adds a band above the prompt with:
 
 - **Next steps**: after each reply, up to three suggested next prompts (made by a small Haiku call). Press or type `1`–`3` to send one, `0` to dismiss.
-- **A usage line** that fits the window, splitting onto two lines when narrow:
+- **A usage line** that fits the window, splitting onto two lines when narrow. On a plan that reports weekly limits:
   `$0.01 · ctx █░░░░░░░ 82.1k/1M · cache 58m · 7d ███████░ ↻21.5h · 5h ░░░░░░░░ ↻4.5h`
+
+  On a plan with no weekly or monthly limits, with extra usage set to a $999 monthly limit:
+  `$0.43 · ctx █░░░░░░░ 92.5k/1M · cache 59m · extra ████░░░░ $517/$999`
   - session cost and context fill
   - a prompt-cache countdown from your last turn (`cache live` while working, `cache cold` once expired)
   - the 7-day, 5-hour and monthly limits when the plan reports them, each bar colored by pace against its reset: dark green (plenty left), green (on track), yellow (close), orange (over), red (way over)
