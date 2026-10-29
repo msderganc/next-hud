@@ -71,6 +71,9 @@ const WINDOW_MS: Record<string, number> = {
   seven_day: 7 * 86_400_000,
 }
 
+// A monthly cap: a Claude gateway's spend limit, or any window named for the month.
+const isMonthly = (r: RateLimit) => r.kind === 'spend_limit' || r.kind.includes('month')
+
 // Pace: the share of the limit used over the share of the window gone.
 // 1 means it runs out right as the window resets.
 const PACE = [
