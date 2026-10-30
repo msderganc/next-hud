@@ -22,6 +22,10 @@ const ZERO = {
 }
 
 test('the band shows usage and numbered next steps', async ($, on) => {
+  const kv = new Map<string, unknown>()
+  on('store.get', (_, e) => ({ value: kv.get(e.key) }))
+  on('store.set', (_, e) => (kv.set(e.key, e.value), { value: undefined }))
+  on('store.keys', () => ({ value: [...kv.keys()] }))
   on('session.usage', () => ({
     value: { startedAt: 0, context: { window: 1_000_000 }, rateLimits: [] },
   }))

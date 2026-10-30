@@ -1,7 +1,7 @@
 {
   "name": "next-hud",
-  "version": "0.5.0",
-  "description": "A band above the prompt with numbered next steps and a usage line (cost, context, cache, 7d and 5h limits).",
+  "version": "0.5.2",
+  "description": "A band above the prompt with numbered next steps and a usage line (cost, context, cache, 7d, 5h and monthly limits, or tracked extra usage).",
   "types": "./types/index.d.ts",
   "userConfig": {
     "cacheTtl": {
@@ -10,6 +10,18 @@
       "description": "How long the prompt cache lives after the last request: 1h on a subscription, 5m on most API keys.",
       "default": "1h",
       "options": ["1h", "5m"]
+    },
+    "monthlyLimit": {
+      "type": "string",
+      "title": "Monthly extra usage limit (USD)",
+      "description": "Your monthly extra usage limit in dollars. Leave empty to show spend without a bar. Used only when the plan reports no weekly or monthly limit.",
+      "default": ""
+    },
+    "monthSpentSoFar": {
+      "type": "string",
+      "title": "Extra usage already spent this month (USD)",
+      "description": "Dollars already spent when tracking starts. Applies to the first month only; later months start at 0.",
+      "default": ""
     }
   }
 }
