@@ -44,17 +44,32 @@ const trackMonth = async ($: any, usd: number, seed: number): Promise<number> =>
 const SEP = ' · '
 
 // Short countdown in decimals: "3.2d", "21.5h", "12m", "45s".
-const span = (ms: number) => {
+// `wholeHours` drops the decimal from hours: "12h".
+export const span = (ms: number, wholeHours = false) => {
   const secs = Math.max(0, Math.round(ms / 1000))
   const h = secs / 3600
   if (h >= 24) return `${(h / 24).toFixed(1)}d`
-  if (h >= 1) return `${h.toFixed(1)}h`
+  if (h >= 1) return `${h.toFixed(wholeHours ? 0 : 1)}h`
   if (secs >= 60) return `${Math.floor(secs / 60)}m`
 
   return `${secs}s`
 }
 
-const fill = (pct: number) => Math.min(BAR, Math.round((pct / 100) * BAR))
+// Any usage above zero shows at least one cell, so low readings stay visible.
+// Local clock time: "11:30pm", or "11pm" on the hour.
+export const clock = (ms: number) => {
+  const d = new Date(ms)
+  const mins = d.getMinutes()
+
+  return `${d.getHours() % 12 || 12}${mins ? `:${String(mins).padStart(2, '0')}` : ''}${d.getHours() < 12 ? 'am' : 'pm'}`
+}
+
+// Local weekday: "Sat".
+export const weekday = (ms: number) =>
+  ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(ms).getDay()]
+
+const fill = (pct: number) =>
+  pct > 0 ? Math.max(1, Math.min(BAR, Math.round((pct / 100) * BAR))) : 0
 
 const tone = (pct: number) =>
   pct >= 95 ? 'error' : pct >= 50 ? 'warning' : 'success'
@@ -236,13 +251,23 @@ export const register: Register = (on, options) => {
       ),
     })
 
+    const reset = (r: RateLimit) => {
+      if (!r.resetsAt) return ''
+      const ms = Date.parse(r.resetsAt)
+      const left = span(ms - at, r.kind === 'seven_day')
+      if (r.kind === 'five_hour') return ` ${left}/${clock(ms)}`
+      if (r.kind === 'seven_day') return ` ${left}/${weekday(ms)}`
+
+      return ` ${left}`
+    }
+
     const limit = (label: string, r: RateLimit | undefined): Segment[] =>
       r
         ? [
             bar(
               label,
               r.percentUsed,
-              r.resetsAt ? ` ${span(Date.parse(r.resetsAt) - at)}` : '',
+              reset(r),
               paceTone(r, at),
             ),
           ]

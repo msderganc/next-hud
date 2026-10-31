@@ -1,6 +1,6 @@
 {
   "name": "next-hud",
-  "version": "0.5.2",
+  "version": "0.5.6",
   "description": "A band above the prompt with numbered next steps and a usage line (cost, context, cache, 7d, 5h and monthly limits, or tracked extra usage).",
   "types": "./types/index.d.ts",
   "userConfig": {

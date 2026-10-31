@@ -46,7 +46,7 @@ test('the band shows usage and numbered next steps', async ($, on) => {
     context: { tokens: 82_100, window: 1_000_000, percent: 8 },
     rateLimits: [
       { kind: 'seven_day', percentUsed: 91, resetsAt: '2099-01-01T00:00:00Z' },
-      { kind: 'five_hour', percentUsed: 0 },
+      { kind: 'five_hour', percentUsed: 4 },
     ],
     cost: { usd: 0.01 },
     changed: ['context', 'rateLimits', 'cost'],
@@ -63,7 +63,8 @@ test('the band shows usage and numbered next steps', async ($, on) => {
   const ui = await $.ui.mount(BAND)
   const line = (await ui.find({ type: 'Text', text: /c █/ }))?.text ?? ''
   expect(line).toContain('c █░░░░░░░ · 1.0h · 7d')
-  expect(line).toMatch(/7d █{7}░ \d+\.\dd/)
+  expect(line).toContain('5h █░░░░░░░')
+  expect(line).toMatch(/7d █{7}░ \d+\.\dd[/][A-Z][a-z]{2}/)
   expect(line).not.toMatch(/cache|82\.1k/)
   expect(line).not.toMatch(/last|%/)
 

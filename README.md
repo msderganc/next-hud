@@ -4,7 +4,7 @@ A Claude Code mod that adds a band above the prompt with:
 
 - **Next steps**: after each reply, up to three suggested next prompts (made by a small Haiku call). Press or type `1`–`3` to send one, `0` to dismiss.
 - **A usage line** that fits the window, splitting onto two lines when narrow. On a plan that reports weekly limits:
-  `$0.01 · c █░░░░░░░ · 58m · 7d ███████░ 21.5h · 5h ░░░░░░░░ 4.5h`
+  `$0.01 · c █░░░░░░░ · 58m · 7d ███████░ 21h/Sat · 5h ░░░░░░░░ 4.5h/11:20pm`
 
   On a plan with no weekly or monthly limits, with extra usage set to a $999 monthly limit:
   `$0.43 · c █░░░░░░░ · 59m · extra ████░░░░ $517/$999`

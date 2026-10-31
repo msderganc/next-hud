@@ -63,7 +63,7 @@ test('desktop: the band shows usage and numbered next steps', async ($, on) => {
   const ui = await $.ui.mount(BAND)
   const line = (await ui.find({ type: 'Text', text: /c █/ }))?.text ?? ''
   expect(line).toContain('c █░░░░░░░ · 1.0h · 7d')
-  expect(line).toMatch(/7d █{7}░ \d+\.\dd/)
+  expect(line).toMatch(/7d █{7}░ \d+\.\dd[/][A-Z][a-z]{2}/)
   expect(line).not.toMatch(/cache|82.1k/)
   expect(line).not.toMatch(/last|%/)
 
