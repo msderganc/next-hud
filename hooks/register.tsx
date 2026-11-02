@@ -21,15 +21,24 @@ const BAR = 8
 
 // Claude Code does not report extra usage to plugins, so the month is tracked
 // here: the amount already spent when tracking began (`monthSpentSoFar`, used
-// for that first month only) plus each session's cost, kept in the plugin's
-// store and counted per calendar month.
+// for that first month only) plus the cost each session adds during the month,
+// kept in the plugin's store. A session's cost is cumulative since it started,
+// so only the increase since the last reading counts toward the current month.
 let sessionId = String(Date.now())
 
-// Records this session's cost so far and returns the month's total.
+// Adds this session's cost since its last reading to the month, and returns the month's total.
 const trackMonth = async ($: any, usd: number, seed: number): Promise<number> => {
   const month = new Date().toISOString().slice(0, 7)
-  const prefix = `session:${month}:`
-  await $.store.set(`${prefix}${sessionId}`, usd)
+  const prefix = `spent:${month}:`
+
+  const last = await $.store.get(`last:${sessionId}`)
+  const added = typeof last !== 'number' ? 0 : usd >= last ? usd - last : usd
+  await $.store.set(`last:${sessionId}`, usd)
+  if (added > 0) {
+    const kept = Number((await $.store.get(`${prefix}${sessionId}`)) ?? 0)
+    await $.store.set(`${prefix}${sessionId}`, kept + added)
+  }
+
   const keys: string[] = (await $.store.keys()).filter((key: string) => key.startsWith(prefix))
   const costs = await Promise.all(keys.map(async key => Number((await $.store.get(key)) ?? 0)))
 
