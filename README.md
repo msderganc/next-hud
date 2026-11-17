@@ -36,10 +36,10 @@ Answer `y` to add the marketplace, then pick a scope. In the desktop app, where 
 - **Prompt cache lifetime** (`cacheTtl`): `1h` (default, typical on a subscription) or `5m` (most API keys). The cache countdown is an estimate from when your turns end.
 
 - **Monthly extra usage limit** (`monthlyLimit`): your limit in dollars. With it set, the extra usage line is a bar colored by spend against the share of the month gone. Left empty, it shows the dollar amount alone.
-- **Extra usage already spent** (`monthSpentSoFar`): the dollars spent when tracking begins. It applies to the first month only.
+- **Extra usage already spent** (`monthSpentSoFar`): the dollars this account has already spent this month. Changing it restarts the count from that figure for the current month and the account of the next session to start; later months start at 0.
 
 ## Notes
 
-Claude Code does not pass extra usage to plugins, so the extra usage figure is the sum of the session costs this plugin has seen, plus `monthSpentSoFar`. Sessions that run without the plugin are not counted. The total resets on the first of each month.
+Claude Code does not pass extra usage to plugins, so the extra usage figure is the sum of the session costs this plugin has seen, plus `monthSpentSoFar`. Each session's spend is filed under the account it is signed in to (the desktop app's account, an API key, or the CLI login), and the band shows only the current session's account. Sessions that run without the plugin are not counted. The total resets on the first of each month.
 
 The next-steps list costs one short Haiku call per reply.

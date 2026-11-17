@@ -20,35 +20,66 @@ Answer with one step per line, no numbering, no other text.`
 const BAR = 8
 
 // Claude Code does not report extra usage to plugins, so the month is tracked
-// here: the amount already spent when tracking began (`monthSpentSoFar`, used
-// for that first month only) plus the cost each session adds during the month,
-// kept in the plugin's store. A session's cost is cumulative since it started,
-// so only the increase since the last reading counts toward the current month.
+// here: the amount already spent when tracking began (`monthSpentSoFar`) plus
+// the cost each session adds during the month, kept in the plugin's store.
+//
+// The store is shared by every Claude Code session on the machine, whichever
+// account it is signed in to, so each session's spend is filed under its
+// account and the band totals only the current session's account.
+//
+// A session's cost is cumulative since it started. The same session can be
+// open in two processes at once or resumed, so readings can arrive out of
+// order; only an increase above the highest reading seen counts.
 let sessionId = String(Date.now())
+let account = 'unknown'
 
-// Adds this session's cost since its last reading to the month, and returns the month's total.
-const trackMonth = async ($: any, usd: number, seed: number): Promise<number> => {
+// The account this session bills to: the desktop app names it in the
+// environment; a terminal session uses the login record, unless an API key or
+// cloud provider takes over.
+const findAccount = async ($: any): Promise<string> => {
+  const desktop = await $.env.get('CLAUDE_CODE_ACCOUNT_UUID')
+  if (desktop) return desktop
+  if ((await $.env.get('ANTHROPIC_API_KEY')) || (await $.env.get('ANTHROPIC_AUTH_TOKEN'))) return 'api-key'
+  if ((await $.env.get('CLAUDE_CODE_USE_BEDROCK')) || (await $.env.get('CLAUDE_CODE_USE_VERTEX'))) return 'cloud'
+  const dir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? (await $.env.get('HOME'))
+  try {
+    const login = JSON.parse(await $.fs.read(`${dir}/.claude.json`))
+    return login?.oauthAccount?.accountUuid ?? 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+// Adds this session's new cost to its account's month, and returns that account's total.
+export const trackMonth = async (
+  $: any,
+  usd: number,
+  seed: number,
+  at = { sessionId, account },
+): Promise<number> => {
+  const { sessionId: id, account: acct } = at
   const month = new Date().toISOString().slice(0, 7)
-  const prefix = `spent:${month}:`
+  const prefix = `spent:${month}:${acct}:`
 
-  const last = await $.store.get(`last:${sessionId}`)
-  const added = typeof last !== 'number' ? 0 : usd >= last ? usd - last : usd
-  await $.store.set(`last:${sessionId}`, usd)
+  const peak = await $.store.get(`peak:${id}`)
+  const added = typeof peak === 'number' ? usd - peak : 0
+  if (typeof peak !== 'number' || added > 0) await $.store.set(`peak:${id}`, usd)
   if (added > 0) {
-    const kept = Number((await $.store.get(`${prefix}${sessionId}`)) ?? 0)
-    await $.store.set(`${prefix}${sessionId}`, kept + added)
+    const kept = Number((await $.store.get(`${prefix}${id}`)) ?? 0)
+    await $.store.set(`${prefix}${id}`, kept + added)
   }
 
   const keys: string[] = (await $.store.keys()).filter((key: string) => key.startsWith(prefix))
   const costs = await Promise.all(keys.map(async key => Number((await $.store.get(key)) ?? 0)))
 
-  let seedMonth = await $.store.get('seedMonth')
-  if (seedMonth === undefined || seedMonth === null) {
-    seedMonth = month
-    await $.store.set('seedMonth', month)
-  }
+  // The seed applies to the month and account it was entered for. Changing
+  // `monthSpentSoFar` restarts it from the current month and account.
+  const seedAt = await $.store.get('seedAt')
+  const current = seedAt?.value === seed ? seedAt : { value: seed, month, account: acct }
+  if (current !== seedAt) await $.store.set('seedAt', current)
+  const seeded = current.month === month && current.account === acct ? seed : 0
 
-  return (month === seedMonth ? seed : 0) + costs.reduce((a, b) => a + b, 0)
+  return seeded + costs.reduce((a, b) => a + b, 0)
 }
 const SEP = ' · '
 
@@ -160,6 +191,7 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const { context, rateLimits, cost, startedAt } = await $.session.usage()
     sessionId = String(startedAt ?? Date.now())
+    account = await findAccount($)
     const monthSpent = await trackMonth($, cost?.usd ?? 0, seed)
     await update($, usage, () => ({ context, rateLimits, cost, monthSpent }))
     await update($, now, () => Date.now())
